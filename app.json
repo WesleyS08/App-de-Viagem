@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "AppdeViagem",
-    "slug": "AppdeViagem",
+    "slug": "appdeviagem",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,6 +22,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d4a98512-6118-44c2-821e-fc6634443d67"
+      }
+    },
+    "owner": "wesley2.0"
   }
 }
