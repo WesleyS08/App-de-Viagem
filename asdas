@@ -1,27 +1,39 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View, StatusBar, TextInput, Platform, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  StatusBar,
+  TextInput,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Linking } from 'react-native';
+import { GoogleGenerativeAI } from '@google/generative-ai'; // Importação direta
 
-const statusBarHeight = StatusBar.currentHeight;
-const API_KEY = '';
+const API_KEY = 'AIzaSyCKqGHv-z57xe-NBZl63wQVt6X8Os141Rg'; // Substitua por uma variável de ambiente
+
+// Configuração do calendário para exibir em português
+LocaleConfig.locales['pt'] = {
+  monthNames: [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ],
+  monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+  dayNames: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+  dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+  today: 'Hoje',
+};
+LocaleConfig.defaultLocale = 'pt';
 
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return new Date(dateString).toLocaleDateString('pt-BR', options);
 };
-
-// Configuração do calendário para exibir em português
-LocaleConfig.locales['pt'] = {
-  monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
-  monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-  dayNames: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
-  dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
-  today: 'Hoje'
-};
-LocaleConfig.defaultLocale = 'pt';
 
 const countDays = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
@@ -41,8 +53,7 @@ export default function App() {
   const [markedDates, setMarkedDates] = useState({});
   const [showCalendar, setShowCalendar] = useState(false);
 
-  const { GoogleGenerativeAI } = require("@google/generative-ai");
-  const genAI = new GoogleGenerativeAI(API_KEY); // Using environment variable
+  const genAI = new GoogleGenerativeAI(API_KEY); // Usando a variável de ambiente
 
   const resetAll = () => {
     setCity('');
@@ -54,6 +65,19 @@ export default function App() {
     setShowCalendar(false);
   };
 
+  const formatResponse = (response) => {
+    const partes = response.split(/\n/);
+    return partes.map((parte, index) => (
+      <Text key={index} style={styles.responseText}>
+        {parte.split("**").map((subParte, subIndex) => (
+          subIndex % 2 === 1
+            ? <Text key={subIndex} style={styles.boldText}>{subParte}</Text>
+            : <Text key={subIndex}>{subParte}</Text>
+        ))}
+        {'\n'}
+      </Text>
+    ));
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -61,13 +85,10 @@ export default function App() {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       const prompt = `
-      Eu gostaria de um roteiro de viagem para ${city}, durante ${days} dias.
-      O período da viagem é de ${formatDate(selectedStartDate)} até ${formatDate(selectedEndDate)}.
-      Por favor, inclua informações sobre eventos que estarão acontecendo durante esse período nessa cidade.
-      Além disso, gostaria que você fornecesse URLs de imagens de alta qualidade relacionadas a cada local mencionado no roteiro, para que eu possa visualizá-los.
-      Se possível, limite as imagens a 1 ou 2 por local.
-  `;
-
+        Eu gostaria de um roteiro de viagem para ${city}, durante ${days} dias.
+        O período da viagem é de ${formatDate(selectedStartDate)} até ${formatDate(selectedEndDate)}.
+        Além do roteiro, por favor, inclua informações sobre eventos que estarão acontecendo durante esse período nessa cidade e, se possível, envie fotos dos lugares mencionados no roteiro.
+      `;
 
       const result = await model.generateContent(prompt);
       const text = result.response.text();
@@ -132,7 +153,7 @@ export default function App() {
             placeholder="Ex: São Paulo, SP"
             style={styles.input}
             value={city}
-            onChangeText={(text) => setCity(text)}
+            onChangeText={setCity}
           />
           <Pressable style={styles.resetButton} onPress={resetAll}>
             <MaterialIcons name="refresh" size={24} color="#FFF" />
@@ -149,13 +170,13 @@ export default function App() {
           maximumTrackTintColor="#d3d3d3"
           thumbTintColor="#61094d"
           value={days}
-          onValueChange={(value) => setDays(value)}
+          onValueChange={setDays}
         />
         <Text style={styles.sub}>Ou selecione uma data</Text>
 
         <Pressable
           style={[styles.buttonCalendar, { marginBottom: 10 }]}
-          onPress={() => setShowCalendar(prev => !prev)} // Alternando o estado corretamente
+          onPress={() => setShowCalendar(prev => !prev)}
         >
           <View style={styles.buttonContent}>
             <Text style={styles.buttonText}>
@@ -189,6 +210,7 @@ export default function App() {
         )}
         <MaterialIcons name="travel-explore" size={24} color="#FFF" />
       </Pressable>
+
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {loading && (
           <View style={styles.content}>
@@ -200,21 +222,10 @@ export default function App() {
         {travel && (
           <View style={styles.content}>
             <Text style={styles.title}>Roteiro Gerado:</Text>
-            {travel.split('\n').map((line, index) => (
-              <Text key={index} style={styles.travel}>
-                {line.includes('http') ? (
-                  <Text style={{ color: 'blue' }} onPress={() => Linking.openURL(line)}>
-                    {line}
-                  </Text>
-                ) : (
-                  line
-                )}
-              </Text>
-            ))}
+            {formatResponse(travel)}
           </View>
         )}
       </ScrollView>
-
     </View>
   );
 }
@@ -222,107 +233,82 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    padding: 16,
     backgroundColor: '#f1f1f1',
-    paddingTop: Platform.OS === 'android' ? statusBarHeight : 0,
   },
   heading: {
-    fontSize: 23,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 35,
-    marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  form: {
-    backgroundColor: '#FFF',
-    width: '90%',
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 16,
+  label: {
     marginBottom: 8,
+    fontSize: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#94a3b8',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 16,
   },
   input: {
     flex: 1,
     height: 40,
-    padding: 10,
-    color: '#333',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    marginRight: 8,
   },
   resetButton: {
-    backgroundColor: '#812B8C',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  days: {
-    color: '#812B8C',
-    fontWeight: 'bold',
-  },
-  sub: {
-    fontSize: 14,
-    marginVertical: 8,
+    backgroundColor: '#61094d',
+    padding: 10,
+    borderRadius: 4,
   },
   buttonCalendar: {
-    backgroundColor: '#812B8C',
-    padding: 10,
-    borderRadius: 5,
-  },
-  buttonContent: {
-    flexDirection: 'row',
+    backgroundColor: '#b05d8d',
+    padding: 12,
+    borderRadius: 4,
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   buttonText: {
     color: '#FFF',
-    fontWeight: 'bold',
+    fontSize: 16,
   },
   calendarContainer: {
-    marginTop: 10,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 10,
-  },
-  button: {
-    backgroundColor: '#812B8C',
+    backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '90%',
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  containerScroll: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
+    borderRadius: 4,
+    elevation: 2,
   },
   content: {
-    marginBottom: 20,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 15,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 4,
+    elevation: 2,
+    marginBottom: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 8,
   },
-  travel: {
+  days: {
+    fontWeight: 'bold',
+  },
+  sub: {
     marginTop: 10,
-    fontSize: 16,
-    lineHeight: 24,
+    marginBottom: 10,
+    textAlign: 'center',
+    fontSize: 14,
   },
-
+  scrollContainer: {
+    paddingBottom: 24,
+    marginTop: 4,
+  },
+  responseText: {
+    marginVertical: 4,
+  },
+  boldText: {
+    fontWeight: 'bold',
+  },
 });
