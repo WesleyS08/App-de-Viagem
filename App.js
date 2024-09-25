@@ -6,7 +6,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Linking } from 'react-native';
 
 const statusBarHeight = StatusBar.currentHeight;
-const API_KEY = '';
+const API_KEY = 'Sua Chave';
 
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -61,11 +61,11 @@ export default function App() {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       const prompt = `
-      Eu gostaria de um roteiro de viagem para ${city}, durante ${days} dias.
+      Eu gostaria de um roteiro detalhado de viagem para ${city}, durante ${days} dias, e caso as informacoes de ${formatDate(selectedStartDate)} estejam vazias ignore essa parte ()
       O período da viagem é de ${formatDate(selectedStartDate)} até ${formatDate(selectedEndDate)}.
       Por favor, inclua informações sobre eventos que estarão acontecendo durante esse período nessa cidade.
-      Além disso, gostaria que você fornecesse URLs de imagens de alta qualidade relacionadas a cada local mencionado no roteiro, para que eu possa visualizá-los.
-      Se possível, limite as imagens a 1 ou 2 por local.
+      Além disso, me fale alguma questões como valor da passagem(de ônibus), prato tipico e etc.
+      e se por um acaso nao for enviado o nome da cidade,  quero que me responda " sinto muito preciso de uma cidade" 
   `;
 
 
@@ -187,7 +187,7 @@ export default function App() {
         ) : (
           <Text style={styles.buttonText}>Gerar roteiro</Text>
         )}
-        <MaterialIcons name="travel-explore" size={24} color="#FFF" />
+        <MaterialIcons name="travel-explore" size={24} color="#FFF" style={{ marginLeft: 10 }} />
       </Pressable>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {loading && (
@@ -199,16 +199,21 @@ export default function App() {
 
         {travel && (
           <View style={styles.content}>
-            <Text style={styles.title}>Roteiro Gerado:</Text>
+            <Text style={styles.title}>Roteiro Gerado 👇</Text>
             {travel.split('\n').map((line, index) => (
               <Text key={index} style={styles.travel}>
-                {line.includes('http') ? (
-                  <Text style={{ color: 'blue' }} onPress={() => Linking.openURL(line)}>
-                    {line}
-                  </Text>
-                ) : (
-                  line
-                )}
+                {line.split(/(\*\*.*?\*\*)/g).map((part, idx) => {
+                  const isBold = part.startsWith('**') && part.endsWith('**');
+                  const text = isBold ? part.replace(/\*\*/g, '') : part; // Remove os asteriscos
+
+                  return isBold ? (
+                    <Text key={idx} style={{ fontWeight: 'bold' }}>
+                      {text}
+                    </Text>
+                  ) : (
+                    text
+                  );
+                })}
               </Text>
             ))}
           </View>
@@ -286,6 +291,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   buttonText: {
+    MarginLeft: 4,
     color: '#FFF',
     fontWeight: 'bold',
   },
