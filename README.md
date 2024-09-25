@@ -27,13 +27,13 @@ Siga os passos abaixo para rodar o projeto localmente:
 1. Clone o repositório:
 
     ```bash
-    git clone https://github.com/seu-usuario/seu-repositorio.git
+    git clone https://github.com/WesleyS08/App-de-Viagem.git
     ```
 
 2. Instale as dependências:
 
     ```bash
-    cd seu-repositorio
+    cd App-de-Viagem
     npm install
     ```
 
@@ -57,6 +57,10 @@ Siga os passos abaixo para rodar o projeto localmente:
 ## Exemplo de Uso
 
 Ao inserir a cidade "São Paulo, SP" e escolher um período de 5 dias, o aplicativo consultará a API do Google Generative AI (Gemini) e fornecerá um roteiro incluindo eventos, preços de passagens, sugestões de pratos típicos e muito mais.
+
+
+https://github.com/user-attachments/assets/4074538f-0b6a-4d5f-a005-b6518ec10487
+
 
 ## Dependências
 
